@@ -1,0 +1,67 @@
+// First, let's set up the project and install the required dependencies:
+
+$ mkdir polling_app
+$ cd polling_app
+$ python3 -m venv venv
+$ source venv/bin/activate
+(venv) $ pip install flask flask-sqlalchemy
+
+// Next, let's create the main script for the app:
+
+from flask import Flask, request, render_template, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///polls.db'
+db = SQLAlchemy(app)
+
+class Poll(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.String, nullable=False)
+    option_a = db.Column(db.String, nullable=False)
+    option_b = db.Column(db.String, nullable=False)
+    votes_a = db.Column(db.Integer, default=0)
+    votes_b = db.Column(db.Integer, default=0)
+
+@app.route('/')
+def index():
+    return redirect(url_for('create_poll'))
+
+@app.route('/create', methods=['GET', 'POST'])
+def create_poll():
+    if request.method == 'POST':
+        question = request.form['question']
+        option_a = request.form['option_a']
+        option_b = request.form['option_b']
+        poll = Poll(question=question, option_a=option_a, option_b=option_b)
+        db.session.add(poll)
+        db.session.commit()
+        return redirect(url_for('view_poll', poll_id=poll.id))
+    else:
+        return render_template('create_poll.html')
+
+@app.route('/poll/<int:poll_id>', methods=['GET', 'POST'])
+def view_poll(poll_id):
+    poll = Poll.query.get_or_404(poll_id)
+    if request.method == 'POST':
+        vote = request.form['vote']
+        if vote == 'a':
+            poll.votes_a += 1
+        elif vote == 'b':
+            poll.votes_b += 1
+        db.session.commit()
+    return render_template('view_poll.html', poll=poll)
+
+if __name__ == '__main__':
+    db.create_all()
+    app.run(debug=True)
+    
+    
+// Next, let's create the templates for the app. First, create a templates directory in the project root and add the following template for the poll creation page:
+
+
+<!-- templates/create_poll.html -->
+
+<h1>Create a new poll</h1>
+
+<
